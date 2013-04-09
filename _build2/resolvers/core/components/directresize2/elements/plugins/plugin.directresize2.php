@@ -1,9 +1,10 @@
 <?php
 /**
- * DirectResize2 Plugin
+ * DirectResize2 Plugin 
  
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
 
+ * Version: 1.0.1 (09.04.2013) Fix errors in processing exception parameters
  * Version: 1.0.0 (08.04.2013) It`s must correctly work in ModX {REVO} 2.2 - 2.2.6
  
  * Events: OnWebPagePrerender
@@ -28,6 +29,7 @@ $e = &$modx->event;
 if ($e->name != 'OnWebPagePrerender') {return;}
 
 $log = $modx->getOption('log', $scriptProperties,false);
+// if ($modx->user->get('id')!=1) {$log=false;}
 ////////////////////////////////--=LOG=--///////////////////////////////////
 class log{
 	function __construct($modx,$debug) {
@@ -42,7 +44,7 @@ class log{
 				   'target' => 'FILE',
 				   'options' => array('filename' => "{$logFileName}_$date.log")				   
 			));		
-		}
+		} 
 	}
 	function write($info){
 		if (!$this->debug){return;}
@@ -145,7 +147,7 @@ $output_dom=new DOMDocument();
 
 // рабочий вариант, но при нем функция asXml() возвращает данные в ASCII
 // которые никак не хотят конвертироваться в родную кодировку
-// $output_dom->loadHTML('<?xml encoding="UTF-8">' . $cur_output);
+// $output_dom->loadHTML('xml encoding="UTF-8">' . $cur_output);
 
 $charset=$modx->getOption('modx_charset');
 if (!$charset) $charset="UTF-8";
@@ -199,11 +201,12 @@ foreach ($images as $imgs) {
 	$id        = $imgs['id'];
 	$alt       = $imgs['alt'];
 	$title     = $imgs['title'];
-	$class     = explode(" ",$imgs['class']);
+	// $class     = explode(" ",$imgs['class']);
+	$class     = $imgs['class']; /*Fix by Setest 2013-04-09*/
 	
 	$path_img = urldecode($path_img); // Fix by Fi1osof
 	// $path_img = $path_img; // Fix by Fi1osof
-	// $log->write("XXX: {$path_img}");
+	$log->write(print_r($path_img,true));
 	
 	if (file_exists($path_img)) {
 		// echo "|".substr($path_img,0,strlen($path_base))."|".PHP_EOL;
@@ -212,8 +215,9 @@ foreach ($images as $imgs) {
 		// echo "=====".PHP_EOL;
 		$count_imgs++;
 		$log->write("==========---IMG №{$count_imgs}---==========");
+		$log->write("{$id} {$alt} {$title} {$class}");
 
-		if (strpos("{$id} {$alt} {$title} {$class}",$exclude_text_in_elements)){
+		if (strpos("{$id} {$alt} {$title} {$class}",$exclude_text_in_elements)!== false){
 			$log->write("Exclude image: $path_img, because 'id', 'class', 'title' or 'id' is contains '$exclude_text_in_elements'");
 			continue;
 		}
@@ -228,6 +232,7 @@ foreach ($images as $imgs) {
 		$config_default = getconfigparam($config_default_thumb_param);	
 
 		// проверяем исключение расширение файла exclude_extensions
+		/*Fix by Setest 2013-04-09*/
 		if ($exclude_extensions and $exclude_extensions=str_replace(' ', '', $exclude_extensions) and ($exclude_extensions=explode(",",$exclude_extensions)) and (in_array($ext, $exclude_extensions))){
 			$log->write("except extension of file ({$ext}), return;");
 			continue;	
@@ -237,7 +242,7 @@ foreach ($images as $imgs) {
 		// if ($exclude_dirs and $exclude_dirs=str_replace(' ', '', $exclude_dirs) and (in_array($cur_dir,explode(",",$exclude_dirs)))){
 		$excl=false;
 		if ($exclude_dirs){
-			$log->write("EXCL");
+			// $log->write("EXCL");
 			// return;
 			if ($exclude_dirs_children) {
 			
@@ -252,7 +257,14 @@ foreach ($images as $imgs) {
 			else {
 				foreach ($exclude_dirs as $path) { 
 					$log->write("EXCLUDE DIRS CONDITIONS: curdir ($img_dir), exclude dir ($path)");
-					if ((strpos($path, $exclude_dirs_suffix) !== false) && (strpos($img_dir, substr($path,0,-1*(strlen($exclude_dirs_suffix)))) !== false)) {
+					/*Fix by Setest 2013-04-09*/
+					// так как пользователь может указать папку исключения в двух видах к примеру:
+					// images/{ExChild} или images{ExChild}, то нужно это учесть
+					if ((strpos($path, $exclude_dirs_suffix) !== false) && (
+						strpos($img_dir, substr($path,0,-1*(strlen($exclude_dirs_suffix)))) !== false
+						or
+						strpos($img_dir, substr($path,0,-1*((strlen($exclude_dirs_suffix))+1))) !== false
+					)) {
 						// если содержит в строке &ExChild
 						$log->write("except {$exclude_dirs_suffix} in: {$path}, return;");
 						$excl=true; break;
