@@ -1,5 +1,9 @@
 Changelog for DirectResize2 integration into MODx Revolution.
 
+1.0.1 (09.04.2013)
+==============
+- Fix errors in processing exception parameters
+
 1.0 (08.04.2013)
 ==============
 - Initial release.
