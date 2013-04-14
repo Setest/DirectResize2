@@ -106,6 +106,7 @@ $hs_outlineType = $modx->getOption('outline_type',$scriptProperties,'rounded-whi
 $hs_credit = $modx->getOption('hs_credit',$scriptProperties,'Highslide JS');
 // Colorbox
 $cb_style = $modx->getOption('style',$scriptProperties,'style1');
+if (empty($cb_style)) $cb_style='style1';
 $cb_transition = $modx->getOption('transition',$scriptProperties,'elastic');
 // PrettyPhoto
 $pp_theme = $modx->getOption('theme',$scriptProperties,'pp_default');
