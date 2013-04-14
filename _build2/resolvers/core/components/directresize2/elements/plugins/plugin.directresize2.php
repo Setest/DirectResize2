@@ -3,7 +3,8 @@
  * DirectResize2 Plugin 
  
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
-
+ 
+ * Version: 1.0.2 (14.04.2013) Fix errors in js and css paths, fix parameter style (colorbox part) in set of parameters.
  * Version: 1.0.1 (09.04.2013) Fix errors in processing exception parameters
  * Version: 1.0.0 (08.04.2013) It`s must correctly work in ModX {REVO} 2.2 - 2.2.6
  
@@ -57,7 +58,7 @@ $log=new log($modx,$log);
 
 // $modx->lexicon->load('directresize2:properties');
 
-// $path = $modx->getOption('cache_path',$scriptProperties,'assets/components/directresize/cache');
+// $path = $modx->getOption('cache_path',$scriptProperties,'assets/components/directresize2/cache');
 
 $thumb_key = $modx->getOption('thumb_key',$scriptProperties,''); // this parameter add in the filename of thumbnail
 $thumbnail_dir = $modx->getOption('thumbnail_dir', $scriptProperties);
@@ -121,7 +122,7 @@ $exclude_text_in_elements = $modx->getOption('exclude_text_in_elements', $script
 $exclude_extensions = $modx->getOption('exclude_extensions', $scriptProperties, null);	// исключаем файлы с раширением ... содержащиеся в exclude_extensions, перечисленные через запятую
 
 // подключаем собственную функцию уменьшения картинок
-// require_once MODX_CORE_PATH.'components/directresize/elements/plugins/plugin.directresize.php';
+// require_once MODX_CORE_PATH.'components/directresize2/elements/plugins/plugin.directresize.php';
 // подключаем phpthumb
 require_once MODX_CORE_PATH.'model/phpthumb/phpthumb.class.php';
 
@@ -192,6 +193,11 @@ if (!function_exists('getconfigparam')) {
 }
 
 $count_imgs=0;
+
+if (!empty($images)) {
+	// get version modx
+	$log->write("ModX version:".$modx->getOption('settings_version'));
+}
 	
 foreach ($images as $imgs) {
 	$imgstring = $imgs->asXML(); // так как при этом возврате у нас происходит замена " />" на "/>" то нам нужно вернуть этот пробел иначе мы не получим замену в итоге
@@ -215,8 +221,6 @@ foreach ($images as $imgs) {
 		// echo "=====".PHP_EOL;
 		$count_imgs++;
 		$log->write("==========---IMG №{$count_imgs}---==========");
-		// $log->write("{$id} {$alt} {$title} {$class}");
-
 		if (strpos("{$id} {$alt} {$title} {$class}",$exclude_text_in_elements)!== false){
 			$log->write("Exclude image: $path_img, because 'id', 'class', 'title' or 'id' is contains '$exclude_text_in_elements'");
 			continue;
@@ -384,7 +388,7 @@ foreach ($images as $imgs) {
 
 		###############################
 		// непонятная строка разобраться и что за verif_light
-		// preg_match("/directresize/",strtolower($imgstring),$verif_light);
+		// preg_match("/directresize2/",strtolower($imgstring),$verif_light);
 		// if ($lightbox == 1 && $verif_light[0] == "directresize") {
 		// if ($lightbox) {
 		// create the expanded image legend from the title and alt tags, for colorbox and prettyPhoto
@@ -432,9 +436,9 @@ if ( $insert_expander and $foundImage ) {
 	// select which expander style sheet and java script is required
 	switch ($expander) {
 		case "colorbox" :
-			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize/colorbox/".$cb_style."/colorbox.css' />\n";
+			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/colorbox/".$cb_style."/colorbox.css' />\n";
 			$jsCall =  "<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-						<script type='text/javascript' src='assets/components/directresize/js/jquery.colorbox-min.js'></script>";
+						<script type='text/javascript' src='assets/components/directresize2/js/jquery.colorbox-min.js'></script>";
 			$js 	=  "<script>
 							jQuery('a.colorbox').colorbox({
 								rel:'colorbox',
@@ -448,9 +452,9 @@ if ( $insert_expander and $foundImage ) {
 		break;
 
 		case "prettyphoto" :
-			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize/css/prettyPhoto.css' />\n";
+			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/css/prettyPhoto.css' />\n";
 			$jsCall  = "<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
-						<script type='text/javascript'src='assets/components/directresize/js/jquery.prettyPhoto.js'></script>";
+						<script type='text/javascript'src='assets/components/directresize2/js/jquery.prettyPhoto.js'></script>";
 			$js		 = "<script>
 							$(document).ready(function(){
 							$(\"a[rel^='prettyPhoto']\").prettyPhoto({
@@ -463,10 +467,10 @@ if ( $insert_expander and $foundImage ) {
 		break;
 		
 		default :// default to highslide settings
-			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize/highslide/highslide.css' />\n";
-			$jsCall  = "<script type='text/javascript' src='assets/components/directresize/js/highslide-with-gallery.min.js'></script>";
+			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/highslide/highslide.css' />\n";
+			$jsCall  = "<script type='text/javascript' src='assets/components/directresize2/js/highslide-with-gallery.min.js'></script>";
 			$js		 = "<script type='text/javascript'>
-							hs.graphicsDir = 'assets/components/directresize/highslide/graphics/'; // path to the graphical elements of highslide
+							hs.graphicsDir = 'assets/components/directresize2/highslide/graphics/'; // path to the graphical elements of highslide
 							hs.outlineType = '".$hs_outlineType."';
 							hs.captionEval = '".$hs_captionEval."';
 							hs.captionOverlay.position = '".$captionPosition."';
