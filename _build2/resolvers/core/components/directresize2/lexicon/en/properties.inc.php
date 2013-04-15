@@ -42,6 +42,16 @@ $_lang['dirres2_outline_type'] = 'Outline type';
 /* PrettyPhoto */
 $_lang['dirres2_theme'] = 'Theme';
 
+/* FancyBox2 */
+$_lang['dirres2_fb2_padding'] = 'Space inside fancyBox around content. Can be set as array - [top, right, bottom, left].';
+$_lang['dirres2_fb2_openSpeed'] = 'The time it takes (in ms, or "slow", "normal", "fast") to complete transition';
+$_lang['dirres2_fb2_closeSpeed'] = 'The time it takes (in ms, or "slow", "normal", "fast") to complete transition';
+$_lang['dirres2_fb2_openEffect'] = 'Animation effect ("elastic", "fade" or "none") for each transition type';
+$_lang['dirres2_fb2_closeEffect'] = 'Animation effect ("elastic", "fade" or "none") for each transition type';
+$_lang['dirres2_fb2_closeClick'] = 'If set to true, fancyBox will be closed when user clicks the content.';
+$_lang['dirres2_fb2_playSpeed'] = 'Slideshow speed in milliseconds.';
+$_lang['dirres2_fb2_autoPlay'] = 'If set to true, slideshow will start after opening the first gallery item.';
+
 /* Thumbnail */
 $_lang['dirres2_default_thumb_path'] = 'The path of the files preview, if specified, the parameter "thumbnail_dir" ignored';
 $_lang['dirres2_rewrite_image_on_exist'] = 'Rewrite thumbnail files if they exist';

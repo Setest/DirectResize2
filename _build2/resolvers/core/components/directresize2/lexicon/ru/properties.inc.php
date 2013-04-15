@@ -42,6 +42,17 @@ $_lang['dirres2_outline_type'] = 'Тип внешней линии';
 /* PrettyPhoto */
 $_lang['dirres2_theme'] = 'Тема';
 
+/* FancyBox2 */
+$_lang['dirres2_fb2_padding'] = 'Свободное расстояние внутри fancyBox вокруг содержимого. Может быть установлен как массив в виде: [top, right, bottom, left].';
+$_lang['dirres2_fb2_openSpeed'] = 'Время открытия в мс. или принимает значения ("slow", "normal", "fast") для завершения перехода.';
+$_lang['dirres2_fb2_closeSpeed'] = 'Время закрытия в мс. или принимает значения ("slow", "normal", "fast") для завершения перехода.';
+$_lang['dirres2_fb2_openEffect'] = 'Эфект открытия окна ("elastic", "fade" or "none") for each transition type';
+$_lang['dirres2_fb2_closeEffect'] = 'Эфект закрытия окна ("elastic", "fade" or "none") for each transition type';
+$_lang['dirres2_fb2_closeClick'] = 'If set to true, fancyBox will be closed when user clicks the content.';
+$_lang['dirres2_fb2_playSpeed'] = 'Slideshow speed in milliseconds.';
+$_lang['dirres2_fb2_autoPlay'] = 'If set to true, slideshow will start after opening the first gallery item.';
+
+
 /* Thumbnail */
 $_lang['dirres2_default_thumb_path'] = 'Путь расположения файлов превью, если он указан, то параметр "thumbnail_dir" игнорируется';
 $_lang['dirres2_rewrite_image_on_exist'] = 'Переписывать файлы эскизов если они существуют';

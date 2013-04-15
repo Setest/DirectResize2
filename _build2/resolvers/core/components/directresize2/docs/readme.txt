@@ -15,8 +15,12 @@ A modx revo plugin to apply the a selected image expander to any images in modx 
 * Highslide
 * Colorbox
 * prettyPhoto
+* FancyBox2
 
 IMPORTANT NOTE: Highslide JS is licensed under a Creative Commons Attribution-NonCommercial 2.5 License. This means you need the author's permission to use Highslide JS on commercial websites.
+IMPORTANT NOTE: FancyBox licensed under Creative Commons Attribution-NonCommercial 3.0 license. 
+You are free to use fancyBox for your personal or non-profit website projects. 
+You can get the author's permission to use fancyBox for commercial websites by paying a fee.
 
 Whilst free for personal and non-profit organisations, if you are using highslide for a commercial site then you must purchase a license.
 

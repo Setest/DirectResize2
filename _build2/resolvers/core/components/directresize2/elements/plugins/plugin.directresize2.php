@@ -4,6 +4,7 @@
  
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  
+ * Version: 1.1.2 (16.04.2013) Fix errors in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox
  * Version: 1.0.2 (14.04.2013) Fix errors in js and css paths, fix parameter style (colorbox part) in set of parameters.
  * Version: 1.0.1 (09.04.2013) Fix errors in processing exception parameters
  * Version: 1.0.0 (08.04.2013) It`s must correctly work in ModX {REVO} 2.2 - 2.2.6
@@ -96,6 +97,20 @@ $lightbox_h = $modx->getOption('max_height',$scriptProperties,600);
 $slideshow = ($modx->getOption('slideshow',$scriptProperties,false))? 'true' : 'false';
 $duration = $modx->getOption('slide_duration',$scriptProperties,2500);
 $opacity = number_format($modx->getOption('opacity',$scriptProperties,50)/100,2);
+
+// FancyBox2
+$fb2_closeClick = $modx->getOption('fb2_closeClick',$scriptProperties,true);
+$fb2_closeClick = $fb2_closeClick ? 'true' : 'false';
+
+$fb2_closeEffect = $modx->getOption('fb2_closeEffect',$scriptProperties,'elastic');
+$fb2_openEffect = $modx->getOption('fb2_openEffect',$scriptProperties,'elastic');
+$fb2_openSpeed = $modx->getOption('fb2_openSpeed',$scriptProperties,150);
+$fb2_closeSpeed = $modx->getOption('fb2_closeSpeed',$scriptProperties,150);
+$fb2_padding = $modx->getOption('fb2_padding',$scriptProperties,0);
+$fb2_autoPlay = $modx->getOption('fb2_autoPlay',$scriptProperties,false);
+$fb2_autoPlay = $fb2_autoPlay ? 'true' : 'false';
+
+$fb2_playSpeed = $modx->getOption('fb2_playSpeed',$scriptProperties,3000);
 
 
 // Highslide
@@ -198,12 +213,21 @@ $count_imgs=0;
 if (!empty($images)) {
 	// get version modx
 	$log->write("ModX version:".$modx->getOption('settings_version'));
+	// приводим к общему виду все img
+	$o = preg_replace('/<img\s+(([a-z]+=".*?")+\s*)>/' , "<img $1 />", $o);
 }
-	
+if (strpos("<!DOCTYPE html>")) $html5=true; // в связи с различной обработкой тегов в html4 и 5 версии
+// хотя можно поиграться и с normalizeDocument()
+
 foreach ($images as $imgs) {
 	$imgstring = $imgs->asXML(); // так как при этом возврате у нас происходит замена " />" на "/>" то нам нужно вернуть этот пробел иначе мы не получим замену в итоге
-	$imgstring=str_replace('/>', ' />', $imgstring);
-	
+	if ($html5==true) {
+		$imgstring=str_replace(array(' />','/>'), '>', $imgstring);
+	}
+	else {
+		$imgstring=str_replace('/>', ' />', $imgstring);
+	}
+
 	$path_img  = $imgs['src'];   
 	$id        = $imgs['id'];
 	$alt       = $imgs['alt'];
@@ -413,6 +437,10 @@ foreach ($images as $imgs) {
 		
 		// select which expander to apply to the graphical element
 		switch ($expander) {
+			case "fancybox2" :
+				$group="";	if ($fb2_autoPlay=='true') $group="rel='group'";
+				$new_link = "<a class='fancybox2' {$group} ".$legende." href='".$path_img."' >".$new_link."</a>";
+				break;		
 			case "colorbox" :
 				$new_link = "<a class='colorbox cboxElement' ".$legende." href='".$path_img."' >".$new_link."</a>";
 				break;
@@ -436,6 +464,43 @@ foreach ($images as $imgs) {
 if ( $insert_expander and $foundImage ) {
 	// select which expander style sheet and java script is required
 	switch ($expander) {
+		case "fancybox2" :
+			$drStyle = "
+				<link rel='stylesheet' type='text/css' href='assets/components/directresize2/fancybox2/jquery.fancybox.css?v=2.1.4' media='screen' />\n
+				<link rel='stylesheet' type='text/css' href='assets/components/directresize2/fancybox2/helpers/jquery.fancybox-buttons.css?v=1.0.5' media='screen' />\n
+				<link rel='stylesheet' type='text/css' href='assets/components/directresize2/fancybox2/helpers/jquery.fancybox-thumbs.css?v=1.0.7' />\n
+			";
+			$jsCall =  "
+				<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js'></script>
+				<script type='text/javascript' src='assets/components/directresize2/fancybox2/jquery.mousewheel-3.0.6.pack.js'></script>
+				<script type='text/javascript' src='assets/components/directresize2/fancybox2/jquery.fancybox.pack.js?v=2.1.4'></script>
+				<script type='text/javascript' src='assets/components/directresize2/fancybox2/helpers/jquery.fancybox-buttons.js?v=1.0.5'></script>
+				<script type='text/javascript' src='assets/components/directresize2/fancybox2/helpers/jquery.fancybox-thumbs.js?v=1.0.7'></script>
+				<script type='text/javascript' src='assets/components/directresize2/fancybox2/helpers/jquery.fancybox-media.js?v=1.0.5'></script>
+			";
+			$js 	=  "<script>
+							jQuery('a.fancybox2').fancybox({
+								padding: {$fb2_padding},
+								maxWidth: {$lightbox_w},
+								maxHeight: {$lightbox_h},
+								
+								autoPlay: {$fb2_autoPlay},
+								playSpeed: {$fb2_playSpeed},
+
+								openEffect : '{$fb2_openEffect}',
+								openSpeed  : {$fb2_openSpeed},
+
+								closeEffect : '{$fb2_closeEffect}',
+								closeSpeed  : {$fb2_closeSpeed},
+
+								closeClick : {$fb2_closeClick},
+
+								helpers : {
+									overlay : null
+								}
+							});
+						</script>\n";
+		break;	
 		case "colorbox" :
 			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/colorbox/".$cb_style."/colorbox.css' />\n";
 			$jsCall =  "<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
