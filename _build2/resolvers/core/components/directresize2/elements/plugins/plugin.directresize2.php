@@ -4,6 +4,7 @@
  
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  
+ * Version: 1.1.4 (17.04.2013) Added new parameters in all lightboxes(min_width,min_height)
  * Version: 1.1.3 (17.04.2013) Fixed a bug check of imagesize
  * Version: 1.1.2 (16.04.2013) Fixed a bugs in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox
  * Version: 1.0.2 (14.04.2013) Fixed a bugs in js and css paths, fix parameter style (colorbox part) in set of parameters.
@@ -94,6 +95,10 @@ $rewrite_image_on_exist = $modx->getOption('rewrite_image_on_exist',$scriptPrope
 $expander = $modx->getOption('expander',$scriptProperties,'highslide');
 $lightbox_w = $modx->getOption('max_width',$scriptProperties,800);
 $lightbox_h = $modx->getOption('max_height',$scriptProperties,600);
+
+$lightbox_w_min = $modx->getOption('min_width',$scriptProperties,100);
+$lightbox_h_min = $modx->getOption('min_height',$scriptProperties,100);
+
 
 $slideshow = ($modx->getOption('slideshow',$scriptProperties,false))? 'true' : 'false';
 $duration = $modx->getOption('slide_duration',$scriptProperties,2500);
@@ -487,6 +492,10 @@ if ( $insert_expander and $foundImage ) {
 			$js 	=  "<script>
 							jQuery('a.fancybox2').fancybox({
 								padding: {$fb2_padding},
+
+								minWidth: {$lightbox_w_min},
+								minHeight: {$lightbox_h_min},
+
 								maxWidth: {$lightbox_w},
 								maxHeight: {$lightbox_h},
 								
@@ -518,8 +527,12 @@ if ( $insert_expander and $foundImage ) {
 								transition:'".$cb_transition."',
 								slideshow:".$slideshow.",
 								slideshowSpeed:".$duration.",
+								
+								initialWidth: {$lightbox_w_min},
+								initialHeight: {$lightbox_h_min},
+
 								maxWidth:".$lightbox_w.",
-								maxHeight:".$lightbox_h."});
+								maxHeight:".$lightbox_w."});
 						</script>\n";
 		break;
 
@@ -531,6 +544,8 @@ if ( $insert_expander and $foundImage ) {
 							$(document).ready(function(){
 							$(\"a[rel^='prettyPhoto']\").prettyPhoto({
 								theme:'".$pp_theme."',
+								default_width: {$lightbox_w},
+								default_height: {$lightbox_w},
 								opacity:".$opacity.",
 								autoplay_slideshow:".$slideshow.",
 								slideshow:".$duration."
@@ -549,6 +564,8 @@ if ( $insert_expander and $foundImage ) {
 							hs.dimmingOpacity = ".$opacity.";
 							hs.numberPosition = 'caption';
 							hs.lang.number = 'Image %1 of %2';
+							hs.minWidth = {$lightbox_w_min};
+							hs.minHeight = {$lightbox_h_min};
 							hs.maxWidth = '".$lightbox_w."';
 							hs.maxHeight = '".$lightbox_h."';
 							hs.lang.creditsText = '".$hs_credit."';
