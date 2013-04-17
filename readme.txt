@@ -15,14 +15,17 @@ A modx revo plugin to apply the a selected image expander to any images in modx 
 * Highslide
 * Colorbox
 * prettyPhoto
+* FancyBox2
 
 IMPORTANT NOTE: Highslide JS is licensed under a Creative Commons Attribution-NonCommercial 2.5 License. This means you need the author's permission to use Highslide JS on commercial websites.
+IMPORTANT NOTE: FancyBox licensed under Creative Commons Attribution-NonCommercial 3.0 license. 
+You are free to use fancyBox for your personal or non-profit website projects. 
+You can get the author's permission to use fancyBox for commercial websites by paying a fee.
 
 Whilst free for personal and non-profit organisations, if you are using highslide for a commercial site then you must purchase a license.
 
 --------------------
 Для русскоговорящей публики:
-
 Это обновленный плагин DirectResize от apcherry. И в нем так много изменений, что пришлось дать ему новое имя с цифрой "2" в конце. Он может делать все что и его младший брат и даже больше. К примеру вы можете исключить файлы (для оборачивания их в Lightbox) из определенных папок, или при наличии специальной фразы в тегах (alt,title,id,class), задавать больше параметров создания thumbnails посредством phpthumbof (изменив всего лишь один параметр). Теперь Вы не привязаны к определенному местоположению файлов thumb. Все директории создаются автоматически, даже те что прописаны принудительно.
 Вы можете переписывать файлы превью по вашему желанию и управлять загрузкой поддерживающих скриптов JS и стилей тем самым исключить конфликт с уже размещенными скриптами. <strong>ОБЯЗАТЕЛЬНО после установки загляните в параметры плагина, чтобы настроить его под свои нужды.</strong>
 

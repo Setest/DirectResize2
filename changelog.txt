@@ -1,8 +1,24 @@
 Changelog for DirectResize2 integration into MODx Revolution.
 
+1.1.4 (17.04.2013)
+==============
+- Added new parameters in all lightboxes(min_width,min_height)
+
+1.1.3 (17.04.2013)
+==============
+- Fixed a bug check of imagesize
+
+1.1.2 (16.04.2013)
+==============
+- Fix errors in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox.
+
+1.0.2 (14.04.2013)
+==============
+- Fix errors in js and css paths, fix parameter style (colorbox part) in set of parameters.
+
 1.0.1 (09.04.2013)
 ==============
-- Fix errors in processing exception parameters
+- Fix errors in processing exception parameters.
 
 1.0 (08.04.2013)
 ==============
