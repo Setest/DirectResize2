@@ -27,6 +27,8 @@ $_lang['dirres2_insert_expander'] = 'Вставить вспомогательн
 $_lang['dirres2_expander'] = 'Выберите тип Lightbox-а';
 $_lang['dirres2_max_height'] = 'Высота окна';
 $_lang['dirres2_max_width'] = 'Ширина окна';
+$_lang['dirres2_min_height'] = 'Минимальная высота окна';
+$_lang['dirres2_min_width'] = 'Минимальная ширина окна';
 $_lang['dirres2_slideshow'] = 'Включить слайдшоу?';
 
 /* ColorBox */

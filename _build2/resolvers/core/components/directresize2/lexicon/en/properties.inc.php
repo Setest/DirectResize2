@@ -27,6 +27,8 @@ $_lang['dirres2_insert_expander'] = 'Insert support code JS for component';
 $_lang['dirres2_expander'] = 'Select the type of Lightbox';
 $_lang['dirres2_max_height'] = 'Lightbox height';
 $_lang['dirres2_max_width'] = 'Lightbox width';
+$_lang['dirres2_min_height'] = 'Minimum height of a window';
+$_lang['dirres2_min_width'] = 'Minimum width of a window';
 $_lang['dirres2_slideshow'] = 'Enable slidshow';
 
 /* ColorBox */
