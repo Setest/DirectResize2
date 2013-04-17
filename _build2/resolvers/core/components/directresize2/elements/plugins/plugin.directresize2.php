@@ -1,12 +1,13 @@
 <?php
 /**
- * DirectResize2 Plugin 
+ * DirectResize2 Plugin
  
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  
- * Version: 1.1.2 (16.04.2013) Fix errors in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox
- * Version: 1.0.2 (14.04.2013) Fix errors in js and css paths, fix parameter style (colorbox part) in set of parameters.
- * Version: 1.0.1 (09.04.2013) Fix errors in processing exception parameters
+ * Version: 1.1.3 (17.04.2013) Fixed a bug check of imagesize
+ * Version: 1.1.2 (16.04.2013) Fixed a bugs in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox
+ * Version: 1.0.2 (14.04.2013) Fixed a bugs in js and css paths, fix parameter style (colorbox part) in set of parameters.
+ * Version: 1.0.1 (09.04.2013) Fixed a bugs in processing exception parameters
  * Version: 1.0.0 (08.04.2013) It`s must correctly work in ModX {REVO} 2.2 - 2.2.6
  
  * Events: OnWebPagePrerender
@@ -164,7 +165,7 @@ $output_dom=new DOMDocument();
 
 // рабочий вариант, но при нем функция asXml() возвращает данные в ASCII
 // которые никак не хотят конвертироваться в родную кодировку
-// $output_dom->loadHTML('<?xml encoding="UTF-8">' . $cur_output);
+// $output_dom->loadHTML('xml encoding="UTF-8">' . $cur_output);
 
 $charset=$modx->getOption('modx_charset');
 if (!$charset) $charset="UTF-8";
@@ -320,19 +321,24 @@ foreach ($images as $imgs) {
 		if (empty($verif_balise)) continue; // если нет ширины или высоты игнорируем
 											// ведь эти параметры зачастую появляются при изменении высоты и ширины
 
-		$height=$imgs['height'];
-		$width=$imgs['width'];
+		$height=(int)$imgs['height'];
+		$width=(int)$imgs['width'];
+		// $log->write("before: $height - $width");
 		// get size from style if it exist
 		if ($style=css_parse($imgs['style'])) {
-			if 	((int)$style['height']>0) $height=str_replace('px',"",$style['height']);
-			if 	((int)$style['width']>0)  $width=str_replace('px',"",$style['width']);
+			if 	((int)$style['height']>0) $height=(int)str_replace('px',"",$style['height']);
+			if 	((int)$style['width']>0)  $width=(int)str_replace('px',"",$style['width']);
 		}
+		$log->write("image tag size: $width(w) - $height(h)");
 		
 		// check if the real size bigger than in HTML then create thubnail
 		$real_size_of_img = getimagesize($path_img_full);
-		$img_src_w  = $real_size_of_img[0];
-		$img_src_h  = $real_size_of_img[1];
-		if ($img_src_w < $width || $img_src_h < $height) {continue;}
+		$img_src_w  = (int)$real_size_of_img[0];
+		$img_src_h  = (int)$real_size_of_img[1];
+		$log->write("realsize: ".$real_size_of_img[0]." - ".$real_size_of_img[1]);
+		$log->write("realsize_array: ".print_r($real_size_of_img,true));
+		
+		if ($img_src_w <= $width || $img_src_h <= $height) {continue;}
 		
 		$foundImage = true; // if needed to add ligtbox to image
 

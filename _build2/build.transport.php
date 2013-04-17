@@ -7,7 +7,7 @@ set_time_limit(0);
 /* задаем имя пакета */
 define('PKG_NAME','DirectResize2');
 define('PKG_NAME_LOWER','directresize2');
-define('PKG_VERSION','1.0.3');
+define('PKG_VERSION','1.1.3');
 define('PKG_RELEASE','rc1');
  
 /* задаем пути для упаковщика */
