@@ -1,36 +1,60 @@
 <?php
 /**
  * DirectResize2 Plugin
- 
+ *
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
- 
+ *
+ * Version: 1.1.5 (18.05.2014) Поправил ошибки, добавил вывод некоторых сообщений в лог, добавил параметры:
+ * 														 direct - при true подразумевается, что плагин ЗАПУСКАЕТСЯ НАПРЯМУЮ КАК СНИППЕТ и получает данные из параметра
+ *                						 curResource (array) - должен содержать content и template, остальное не важно, в случае ошибки плагин НЕЧЕГО НЕ ВОЗВРАЩАЕТ
+ *                       			 пример запуска из сниппета:
+ *                           	 if($s = $modx->getObject('modPlugin', array(
+ *																'name' => 'DirectResize2'
+ *															))){
+ *															  $defaultProp = $s->getProperties();	// параметры плагина по-умолчанию
+ *
+ *																$s->loadScript();	// кешиhetv скрипт
+ *																$f = $s->getScriptName();	// имя функции в кеше
+ *																$params =  array_merge($defaultProp, array(
+ *																	'direct' => true,
+ *																	'log' => true,
+ *  															'curResource' => array(
+ *  																	'content' => '...<img src=...> ...',
+ *  																	'template' => 1
+ *  																)
+ *  														));
+ *  															$result=$f($params);
+ *  														}
+ *  														if ($result) echo ($result);
+ *
  * Version: 1.1.4 (17.04.2013) Added new parameters in all lightboxes(min_width,min_height)
  * Version: 1.1.3 (17.04.2013) Fixed a bug check of imagesize
  * Version: 1.1.2 (16.04.2013) Fixed a bugs in parser html5 and html4 documents, fix css style, add FancyBox2 lightbox
  * Version: 1.0.2 (14.04.2013) Fixed a bugs in js and css paths, fix parameter style (colorbox part) in set of parameters.
  * Version: 1.0.1 (09.04.2013) Fixed a bugs in processing exception parameters
  * Version: 1.0.0 (08.04.2013) It`s must correctly work in ModX {REVO} 2.2 - 2.2.6
- 
+ *
  * Events: OnWebPagePrerender
  * Required: PhpThumbOf snippet for resizing images
-
+ *
  * Based on: DirectResize by Adrian Cherry <github.com/apcherry/directresize>
-
-   Description:   
-		A modx revo plugin to apply the a selected image expander to any 
-		images in modx Revo. The available packages are available for selection 
-		via the plugin properties.
-
-		* Highslide
-		* Colorbox
-		* prettyPhoto
+ *
+ *   Description:
+ *		A modx revo plugin to apply the a selected image expander to any
+ *		images in modx Revo. The available packages are available for selection
+ *		via the plugin properties.
+ *
+ *    Highslide
+ *    Colorbox
+ *    prettyPhoto
  */
- 
+
 
 // if ($modx->user->get('id')!=1) {return;}
 $e = &$modx->event;
 // проверяем нужное событие
-if ($e->name != 'OnWebPagePrerender') {return;}
+$direct = $modx->getOption('direct', $scriptProperties,false);	// для прямого вызова, не только по событию
+if ($e->name != 'OnWebPagePrerender' && !$direct) {return;}
 
 $log = $modx->getOption('log', $scriptProperties,false);
 // if ($modx->user->get('id')!=1) {$log=false;}
@@ -41,21 +65,27 @@ class log{
 		$this->debug = $debug; // принимает true,false
 		if ($this->debug){
 			$logFileName = $this->modx->event->activePlugin;
+			$logFileName = ($logFileName)?$logFileName:"DirectResize2_direct";
 			$this->modx->setLogLevel(modX::LOG_LEVEL_INFO);
 				$date = date('Y-m-d____H-i-s');  // использовать в выводе даты : - нельзя, иначе не создается лог в файл
 				$this->modx->setLogTarget(array(
 				   // 'target' => 'ECHO',
 				   'target' => 'FILE',
-				   'options' => array('filename' => "{$logFileName}_$date.log")				   
-			));		
-		} 
+				   'options' => array('filename' => "{$logFileName}_$date.log")
+			));
+		}
 	}
 	function write($info){
 		if (!$this->debug){return;}
 		$this->modx->log(modX::LOG_LEVEL_INFO, $info);
 	}
 }
-$log=new log($modx,$log);	
+$log=new log($modx,$log);
+
+// get version modx
+$log->write("ModX version:".$modx->getOption('settings_version'));
+
+
 ////////////////////////////////--=LOG=--///////////////////////////////////
 // $log->write(777); return;
 
@@ -67,6 +97,11 @@ $thumb_key = $modx->getOption('thumb_key',$scriptProperties,''); // this paramet
 $thumbnail_dir = $modx->getOption('thumbnail_dir', $scriptProperties);
 $thumbnail_dir = str_replace('//', '/', $thumbnail_dir);
 $thumbnail_dir = str_replace(array("..","."), "", $thumbnail_dir);
+
+// echo $thumbnail_dir;
+// return $thumbnail_dir;
+// print_r($scriptProperties);
+
 if (empty($thumbnail_dir)) return;
 
 $config_default_thumb_param = $modx->getOption('thumb_param', $scriptProperties, "
@@ -81,7 +116,7 @@ $config_default_thumb_param = str_replace(array("'"," "),"",$config_default_thum
 
 $default_thumb_path = $modx->getOption('default_thumb_path',$scriptProperties,null); // assets/images/thumbs
 
-// if enabled then insert special JS for lighbox 
+// if enabled then insert special JS for lighbox
 $insert_expander = $modx->getOption('insert_expander',$scriptProperties,true);
 // if enabled then insert JS code of components such as: jquery.js, colorbox.js etc.
 $insert_expander_js = $modx->getOption('insert_expander_js',$scriptProperties,true);
@@ -143,28 +178,60 @@ $exclude_dirs_children = $modx->getOption('exclude_dirs_children', $scriptProper
 $exclude_text_in_elements = $modx->getOption('exclude_text_in_elements', $scriptProperties, "noresize");	// исключает из проверки изображения которые содержат данный текст в элементах alt, class, id, tittle
 $exclude_extensions = $modx->getOption('exclude_extensions', $scriptProperties, null);	// исключаем файлы с раширением ... содержащиеся в exclude_extensions, перечисленные через запятую
 
+$curResource = $modx->getOption('curResource', $scriptProperties, null);	// содержит данные обрабатываемого ресурса
+
+// print_r($curResource);
+// echo ("ExDir: ".$templates);
+// return 777;
+
+
 // подключаем собственную функцию уменьшения картинок
 // require_once MODX_CORE_PATH.'components/directresize2/elements/plugins/plugin.directresize.php';
 // подключаем phpthumb
 require_once MODX_CORE_PATH.'model/phpthumb/phpthumb.class.php';
 
-$o = &$modx->resource->_output; // get a reference to the output
-$cur_output = $modx->resource->get('content');
 $foundImage = false; // if no image found then don't insert javascript
 
 // working only in templates
-$cur_param_res_template = $modx->resource->get('template');
+if ($direct){
+	$log->write("Плагин запущен напрямую, в обход события!!!");
+	if (!$curResource) {
+    	$log->write("Данных о ресурсе нет");
+    	return;
+	}
+	$log->write("Входящие параметры ресурса: ".print_r($curResource,true));
+
+
+	if (!array_key_exists('template', $curResource)) {
+    	$log->write("Не указан параметр template у ресурса");
+    	return;
+	}
+	if (!array_key_exists('content', $curResource)) {
+    	$log->write("Не указан параметр content у ресурса");
+    	return;
+	}
+	$cur_output = $curResource["content"];
+	$o = $cur_output;
+	$cur_param_res_template = $curResource["template"];
+}else{
+	$o = &$modx->resource->_output; // get a reference to the output
+	$cur_output = $modx->resource->get('content');
+	$cur_param_res_template = $modx->resource->get('template');
+}
+
 if (!empty($templates) and $cur_param_res_template and !in_array($cur_param_res_template, explode(',', str_replace(" ","",$templates)))){
 	// если документ не попадает в шаблон то изменения не проиводятся
 	// in_array($cur_param_res_template, explode(',', $templates))
+	$log->write("Шаблон ресурса не соответствует разрешенным, templates: ".$templates);
 	return;
-}	
+}
 
 // exclude templates
 if (!empty($exclude_templates) and $cur_param_res_template and in_array($cur_param_res_template, explode(',', str_replace(" ","",$exclude_templates)))){
 	// если документ попадает в шаблон то изменения не проиводятся
+	$log->write("Шаблон ресурса попадает под исключение templates: ".$exclude_templates);
 	return;
-}	
+}
 
 $output_dom=new DOMDocument();
 
@@ -217,12 +284,12 @@ if (!function_exists('getconfigparam')) {
 $count_imgs=0;
 
 if (!empty($images)) {
-	// get version modx
-	$log->write("ModX version:".$modx->getOption('settings_version'));
 	// приводим к общему виду все img
 	$o = preg_replace('/<img\s+(([a-z]+=".*?")+\s*)>/' , "<img $1 />", $o);
+}else{
+	$log->write("Изображений не найдено!");
 }
-if (strpos("<!DOCTYPE html>")) $html5=true; // в связи с различной обработкой тегов в html4 и 5 версии
+if (strpos("<!DOCTYPE html>", $o)) $html5=true; // в связи с различной обработкой тегов в html4 и 5 версии
 // хотя можно поиграться и с normalizeDocument()
 
 foreach ($images as $imgs) {
@@ -234,17 +301,17 @@ foreach ($images as $imgs) {
 		$imgstring=str_replace('/>', ' />', $imgstring);
 	}
 
-	$path_img  = $imgs['src'];   
+	$path_img  = $imgs['src'];
 	$id        = $imgs['id'];
 	$alt       = $imgs['alt'];
 	$title     = $imgs['title'];
 	// $class     = explode(" ",$imgs['class']);
 	$class     = $imgs['class']; /*Fix by Setest 2013-04-09*/
-	
+
 	$path_img = urldecode($path_img); // Fix by Fi1osof
 	// $path_img = $path_img; // Fix by Fi1osof
 	$log->write(print_r($path_img,true));
-	
+
 	if (file_exists($path_img)) {
 		// echo "|".substr($path_img,0,strlen($path_base))."|".PHP_EOL;
 		// echo "$path_img".PHP_EOL;
@@ -257,22 +324,22 @@ foreach ($images as $imgs) {
 			continue;
 		}
 
-		
+
 		$img_dir=dirname($path_img);
 		$path_img_full = MODX_BASE_PATH.$path_img;
 // echo "@@@$path_img_full@@@";
 		$img_name = pathinfo($path_img, PATHINFO_FILENAME);
-		$ext = pathinfo($path_img, PATHINFO_EXTENSION);	
+		$ext = pathinfo($path_img, PATHINFO_EXTENSION);
 		// получаем конфигурацию по умолчанию
-		$config_default = getconfigparam($config_default_thumb_param);	
+		$config_default = getconfigparam($config_default_thumb_param);
 
 		// проверяем исключение расширение файла exclude_extensions
 		/*Fix by Setest 2013-04-09*/
 		if ($exclude_extensions and $exclude_extensions=str_replace(' ', '', $exclude_extensions) and ($exclude_extensions=explode(",",$exclude_extensions)) and (in_array($ext, $exclude_extensions))){
 			$log->write("except extension of file ({$ext}), return;");
-			continue;	
+			continue;
 		}
-		
+
 		// проверяем на исключения директории
 		// if ($exclude_dirs and $exclude_dirs=str_replace(' ', '', $exclude_dirs) and (in_array($cur_dir,explode(",",$exclude_dirs)))){
 		$excl=false;
@@ -280,7 +347,7 @@ foreach ($images as $imgs) {
 			// $log->write("EXCL");
 			// return;
 			if ($exclude_dirs_children) {
-			
+
 				foreach ($exclude_dirs as $path) {
 						if (strpos($img_dir, $path) !== false) //return;
 						{
@@ -290,7 +357,7 @@ foreach ($images as $imgs) {
 				}
 			}
 			else {
-				foreach ($exclude_dirs as $path) { 
+				foreach ($exclude_dirs as $path) {
 					$log->write("EXCLUDE DIRS CONDITIONS: curdir ($img_dir), exclude dir ($path)");
 					/*Fix by Setest 2013-04-09*/
 					// так как пользователь может указать папку исключения в двух видах к примеру:
@@ -322,7 +389,7 @@ foreach ($images as $imgs) {
 		// dirname(__FILE__); basename pathinfo
 		// $img = strtolower($imgstring);
 		$verif_balise = sizeof(explode("width",$imgstring)) + sizeof(explode("height",$imgstring)) - 2;
-		
+
 		if (empty($verif_balise)) continue; // если нет ширины или высоты игнорируем
 											// ведь эти параметры зачастую появляются при изменении высоты и ширины
 
@@ -335,16 +402,16 @@ foreach ($images as $imgs) {
 			if 	((int)$style['width']>0)  $width=(int)str_replace('px',"",$style['width']);
 		}
 		$log->write("image tag size: $width(w) - $height(h)");
-		
+
 		// check if the real size bigger than in HTML then create thubnail
 		$real_size_of_img = getimagesize($path_img_full);
 		$img_src_w  = (int)$real_size_of_img[0];
 		$img_src_h  = (int)$real_size_of_img[1];
 		$log->write("realsize: ".$real_size_of_img[0]." - ".$real_size_of_img[1]);
 		$log->write("realsize_array: ".print_r($real_size_of_img,true));
-		
+
 		if ($img_src_w <= $width || $img_src_h <= $height) {continue;}
-		
+
 		$foundImage = true; // if needed to add ligtbox to image
 
 		$thumb_dir = MODX_BASE_PATH.$img_dir."/".$thumbnail_dir."/";
@@ -368,7 +435,7 @@ foreach ($images as $imgs) {
 		}
 		// $filename = $thumb_dir.$name;
 		$imgName = "{$thumb_dir}{$img_name}{$thumb_key}_w{$width}_h{$height}.{$ext}";
-		
+
 		if ($rewrite_image_on_exist or !file_exists($imgName)) {
 			// old method
 			// $imgName = directResize($path_img,$path,$thumb_key,$width,$height,$r,$q_jpg,$q_png);
@@ -389,7 +456,7 @@ foreach ($images as $imgs) {
 					$phpThumb->setParameter($k, $v);
 				}
 			}
-		   
+
 			// генерируем файл
 			if ($phpThumb->GenerateThumbnail()) {
 				$log->write("GenerateThumbnail - OK");
@@ -406,7 +473,7 @@ foreach ($images as $imgs) {
 			else {
 				$log->write("Error: GenerateThumbnail");
 				continue;
-			}		
+			}
 		}
 		// возвращаем нормальный путь к файлу чтобы можно было передать его пользователю
 		$imgName=str_replace(MODX_BASE_PATH, '', $imgName);
@@ -414,12 +481,12 @@ foreach ($images as $imgs) {
 		//-------------------
 		// в этой строке происходит замена начинки src на новую ужатую картинку
 		// $new_link = $path_g[0].$pathRedim.$path_d[0];
-		$log->write("Replace string in output: 
+		$log->write("Replace string in output:
 			search:  {$path_img}
 			replace: {$imgName}
 			subject: {$imgstring}
 		");
-		
+
 		$new_link = str_replace($path_img,$imgName,$imgstring);
 
 		###############################
@@ -445,13 +512,13 @@ foreach ($images as $imgs) {
 			$override = '';
 		}
 
-		
+
 		// select which expander to apply to the graphical element
 		switch ($expander) {
 			case "fancybox2" :
 				$group="";	if ($fb2_autoPlay=='true') $group="rel='group'";
 				$new_link = "<a class='fancybox2' {$group} ".$legende." href='".$path_img."' >".$new_link."</a>";
-				break;		
+				break;
 			case "colorbox" :
 				$new_link = "<a class='colorbox cboxElement' ".$legende." href='".$path_img."' >".$new_link."</a>";
 				break;
@@ -498,7 +565,7 @@ if ( $insert_expander and $foundImage ) {
 
 								maxWidth: {$lightbox_w},
 								maxHeight: {$lightbox_h},
-								
+
 								autoPlay: {$fb2_autoPlay},
 								playSpeed: {$fb2_playSpeed},
 
@@ -515,7 +582,7 @@ if ( $insert_expander and $foundImage ) {
 								}
 							});
 						</script>\n";
-		break;	
+		break;
 		case "colorbox" :
 			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/colorbox/".$cb_style."/colorbox.css' />\n";
 			$jsCall =  "<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
@@ -527,7 +594,7 @@ if ( $insert_expander and $foundImage ) {
 								transition:'".$cb_transition."',
 								slideshow:".$slideshow.",
 								slideshowSpeed:".$duration.",
-								
+
 								initialWidth: {$lightbox_w_min},
 								initialHeight: {$lightbox_h_min},
 
@@ -552,7 +619,7 @@ if ( $insert_expander and $foundImage ) {
 							});});
 						</script>\n";
 		break;
-		
+
 		default :// default to highslide settings
 			$drStyle = "<link rel='stylesheet' type='text/css' href='assets/components/directresize2/highslide/highslide.css' />\n";
 			$jsCall  = "<script type='text/javascript' src='assets/components/directresize2/js/highslide-with-gallery.min.js'></script>";
@@ -588,17 +655,25 @@ if ( $insert_expander and $foundImage ) {
 			}
 		break;
 	}
-	
+
 	if ($insert_expander_css){
 		$log->write("Insert expander css");
 
 		// add the style sheet to the head of the html file
-		$o = preg_replace('~(</head>)~i', $drStyle . '\1', $o);
+		if ($direct){
+			$o.= $drStyle;
+		}else{
+			$o = preg_replace('~(</head>)~i', $drStyle . '\1', $o);
+		}
 	}
 	if ($insert_expander_js){ $js=$jsCall.$js;}
-	$log->write("Insert expander JS"); 
-	// add the javascript to the bottom of the page 
-	$o = preg_replace('~(</body>)~i', $js . '\1', $o);
-	
+	$log->write("Insert expander JS");
+	// add the javascript to the bottom of the page
+	if ($direct){
+		$o.= $js;
+	}else{
+		$o = preg_replace('~(</body>)~i', $js . '\1', $o);
+	}
+
 }
-return;
+return $o;
