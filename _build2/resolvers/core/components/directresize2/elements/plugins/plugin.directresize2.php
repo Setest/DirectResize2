@@ -258,6 +258,7 @@ if (!function_exists('css_parse')) {
 	function css_parse($styles){
 		// parse css and get all the key:value pair styles
 		$css_array = array(); // master array to hold all values
+		$styles = str_replace(" ","",$styles);
 		if (isset($styles) and $styles = explode(';', strtolower($styles)) and !empty($styles)){
 			foreach ($styles as $style) {
 				$value = explode(':', $style);
