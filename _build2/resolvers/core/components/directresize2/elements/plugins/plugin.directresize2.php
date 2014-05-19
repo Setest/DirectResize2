@@ -4,6 +4,7 @@
  *
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  *
+ * Version: 1.1.6 (19.05.2014) Fix error "Tag article invalid in Entity" in ajax call.
  * Version: 1.1.5 (18.05.2014) Поправил ошибки, добавил вывод некоторых сообщений в лог, добавил параметры:
  * 														 direct - при true подразумевается, что плагин ЗАПУСКАЕТСЯ НАПРЯМУЮ КАК СНИППЕТ и получает данные из параметра
  *                						 curResource (array) - должен содержать content и template, остальное не важно, в случае ошибки плагин НЕЧЕГО НЕ ВОЗВРАЩАЕТ
@@ -247,7 +248,9 @@ $cur_output="<html>
   </head>
 <body>{$cur_output}</body>
 </html>";
+libxml_use_internal_errors(true);
 $output_dom->loadHTML($cur_output);
+libxml_use_internal_errors(false);
 
 
 $xml=simplexml_import_dom($output_dom); // just to make xpath more simple
