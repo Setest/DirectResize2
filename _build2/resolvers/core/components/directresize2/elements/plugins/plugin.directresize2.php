@@ -4,6 +4,7 @@
  *
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  *
+ * Version: 1.1.7 (19.05.2014) Добавил параметр image_param (по типу thumb_param), теперь можно задавать параметры для итогового изображения
  * Version: 1.1.6 (19.05.2014) Fix error "Tag article invalid in Entity" in ajax call.
  * Version: 1.1.5 (18.05.2014) Поправил ошибки, добавил вывод некоторых сообщений в лог, добавил параметры:
  * 														 direct - при true подразумевается, что плагин ЗАПУСКАЕТСЯ НАПРЯМУЮ КАК СНИППЕТ и получает данные из параметра
@@ -95,6 +96,7 @@ $log->write("ModX version:".$modx->getOption('settings_version'));
 // $path = $modx->getOption('cache_path',$scriptProperties,'assets/components/directresize2/cache');
 
 $thumb_key = $modx->getOption('thumb_key',$scriptProperties,''); // this parameter add in the filename of thumbnail
+$original_key = $modx->getOption('original_key',$scriptProperties,'original'); // this parameter add in the result filename
 $thumbnail_dir = $modx->getOption('thumbnail_dir', $scriptProperties);
 $thumbnail_dir = str_replace('//', '/', $thumbnail_dir);
 $thumbnail_dir = str_replace(array("..","."), "", $thumbnail_dir);
@@ -105,10 +107,11 @@ $thumbnail_dir = str_replace(array("..","."), "", $thumbnail_dir);
 
 if (empty($thumbnail_dir)) return;
 
-$config_default_thumb_param = $modx->getOption('thumb_param', $scriptProperties, "
-'zc'=1,'bg'='#fff','q'=80");
+$config_default_thumb_param = $modx->getOption('thumb_param', $scriptProperties, "'zc'=1,'bg'='#fff','q'=80");
+$config_default_image_param = $modx->getOption('image_param', $scriptProperties, "'zc'=1,'bg'='#fff','q'=80");
 // 'w'=200,'h'=150,'zc'=1,'bg'='#fff','q'=70");
 $config_default_thumb_param = str_replace(array("'"," "),"",$config_default_thumb_param);
+$config_default_image_param = str_replace(array("'"," "),"",$config_default_image_param);
 
 
 // $r = $modx->getOption('method',$scriptProperties,0);
@@ -285,6 +288,30 @@ if (!function_exists('getconfigparam')) {
 	}
 }
 
+if (!function_exists('generatePhpThumb')) {
+	// function getconfigparam($config_default_param, $type){
+	function generatePhpThumb(&$phpThumb, $imgName, &$log){
+		$result=false;
+			if ($phpThumb->GenerateThumbnail()) {
+				$log->write("GenerateThumbnail - OK");
+				if ($phpThumb->RenderToFile($imgName)) {
+					$log->write("RenderToFile - OK");
+					// устанавливаем права на файл, это опционально, зависит от сервера
+					chmod($imgName, 0666);
+					$result=$imgName;
+				}
+				else {
+					$log->write("Error: RenderToFile: $imgName");
+				}
+			}
+			else {
+				$log->write("Error: GenerateThumbnail");
+			}
+		return $result;
+	}
+}
+
+
 $count_imgs=0;
 
 if (!empty($images)) {
@@ -336,6 +363,10 @@ foreach ($images as $imgs) {
 		$ext = pathinfo($path_img, PATHINFO_EXTENSION);
 		// получаем конфигурацию по умолчанию
 		$config_default = getconfigparam($config_default_thumb_param);
+
+		// получаем конфигурацию итогового изображения
+		$config_image = getconfigparam($config_default_image_param);
+
 
 		// проверяем исключение расширение файла exclude_extensions
 		/*Fix by Setest 2013-04-09*/
@@ -439,6 +470,7 @@ foreach ($images as $imgs) {
 		}
 		// $filename = $thumb_dir.$name;
 		$imgName = "{$thumb_dir}{$img_name}{$thumb_key}_w{$width}_h{$height}.{$ext}";
+		$imgOrigName = "{$thumb_dir}{$img_name}{$original_key}_w{$config_image['w']}_h{$config_image['h']}.{$ext}";
 
 		if ($rewrite_image_on_exist or !file_exists($imgName)) {
 			// old method
@@ -450,6 +482,7 @@ foreach ($images as $imgs) {
 			$phpThumb->setSourceFilename($path_img_full);
 			if (empty($config_default['f'])){
 				$config_default['f']=$ext; // без этого мы не увидим прозрачности в png и gif
+				$config_image['f']=$config_default['f'];
 			}
 			if (!empty($config_default)){
 				$config_default['h']=$height;
@@ -461,22 +494,20 @@ foreach ($images as $imgs) {
 				}
 			}
 
-			// генерируем файл
-			if ($phpThumb->GenerateThumbnail()) {
-				$log->write("GenerateThumbnail - OK");
-				if ($phpThumb->RenderToFile($imgName)) {
-					$log->write("RenderToFile - OK");
-					// устанавливаем права на файл, это опционально, зависит от сервера
-					chmod($imgName, 0666);
+			// генерируем файл предпросмотра
+			if (!generatePhpThumb($phpThumb,$imgName,$log) )continue;
+
+			// создаем файл изображения
+			$phpThumb = new phpThumb();
+			$phpThumb->setSourceFilename($path_img_full);
+			$log->write("ResultBigImage setParameter:  {$config_default_image_param}");
+			if (!empty($config_image)){
+				$log->write("ResultBigImage itogParameter: ".implode(", ",$config_image));
+				foreach ($config_image as $k => $v) {
+					$phpThumb->setParameter($k, $v);
 				}
-				else {
-					$log->write("Error: RenderToFile: $imgName");
-					continue;
-				}
-			}
-			else {
-				$log->write("Error: GenerateThumbnail");
-				continue;
+				if (!$imgOrigName = generatePhpThumb($phpThumb,$imgOrigName,$log) ) continue;
+				$log->write("ResultBigImage RESULT NAME:  {$imgOrigName}");
 			}
 		}
 		// возвращаем нормальный путь к файлу чтобы можно было передать его пользователю
@@ -492,6 +523,11 @@ foreach ($images as $imgs) {
 		");
 
 		$new_link = str_replace($path_img,$imgName,$imgstring);
+
+		if ($imgOrigName){
+			$imgOrigName=str_replace(MODX_BASE_PATH, '', $imgOrigName);
+			$path_img=$imgOrigName;
+		}
 
 		###############################
 		// непонятная строка разобраться и что за verif_light
