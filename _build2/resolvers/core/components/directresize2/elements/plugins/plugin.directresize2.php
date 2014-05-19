@@ -500,12 +500,26 @@ foreach ($images as $imgs) {
 			// создаем файл изображения
 			$phpThumb = new phpThumb();
 			$phpThumb->setSourceFilename($path_img_full);
-			$log->write("ResultBigImage setParameter:  {$config_default_image_param}");
+			$log->write("ResultBigImage setParameter:  ".print_r($config_image,true));
 			if (!empty($config_image)){
 				$log->write("ResultBigImage itogParameter: ".implode(", ",$config_image));
+
+				// if (empty($config_default['f'])){
+				// $phpThumb->setOptions(implode("&",$config_image));
+				//
 				foreach ($config_image as $k => $v) {
+					// if ($k==)explode(",",$config_default_param)
+					$k = str_replace('[]','',$k);
 					$phpThumb->setParameter($k, $v);
 				}
+
+				/*
+$thumbnail = $phpThumbOf->createThumbnailObject();
+$thumbnail->setInput($input);
+$thumbnail->setOptions($options);
+$thumbnail->initializeService();
+return $thumbnail->render();*/
+
 				if (!$imgOrigName = generatePhpThumb($phpThumb,$imgOrigName,$log) ) continue;
 				$log->write("ResultBigImage RESULT NAME:  {$imgOrigName}");
 			}
