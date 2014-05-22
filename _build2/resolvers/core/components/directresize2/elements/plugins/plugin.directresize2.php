@@ -342,8 +342,8 @@ foreach ($images as $imgs) {
 	$path_img = urldecode($path_img); // Fix by Fi1osof
 	// $path_img = $path_img; // Fix by Fi1osof
 	$log->write(print_r($path_img,true));
-
-	if (file_exists($path_img)) {
+	$path_img_full = MODX_BASE_PATH.$path_img;
+	if (file_exists($path_img) || file_exists($path_img_full)) {
 		// echo "|".substr($path_img,0,strlen($path_base))."|".PHP_EOL;
 		// echo "$path_img".PHP_EOL;
 		// echo "$path_base".PHP_EOL;
@@ -357,7 +357,7 @@ foreach ($images as $imgs) {
 
 
 		$img_dir=dirname($path_img);
-		$path_img_full = MODX_BASE_PATH.$path_img;
+
 // echo "@@@$path_img_full@@@";
 		$img_name = pathinfo($path_img, PATHINFO_FILENAME);
 		$ext = pathinfo($path_img, PATHINFO_EXTENSION);
