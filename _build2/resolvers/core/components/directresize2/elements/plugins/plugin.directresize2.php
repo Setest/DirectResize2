@@ -4,6 +4,11 @@
  *
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  *
+ * Version: 1.1.8 (07.06.2014) Добавил параметр output_content, def:"true", т.е. данные по умолчанию парсит только из раздела content, при false обрабатывает все страницу.
+ * 														 Изменил получение поля content c get("content") на getContent(); Т.к. последний может быть перегружен, как например делает Jevix из компонента Ticket.
+ *                						 Также заменил способ получения картинок XML на regexp. Т.к. после того, как нужно заменить оригинал строки на итоговый, он строил оригинал через
+ *                       			 метод xml, и порою строка строилась не так как отдавалась в начале, в ней была другая последовательность параметров в теге img. В результате он не мог
+ *                             ее найти и не производил изменения. Также исправил мелкие ошибки.
  * Version: 1.1.7 (19.05.2014) Добавил параметр image_param (по типу thumb_param), теперь можно задавать параметры для итогового изображения
  * Version: 1.1.6 (19.05.2014) Fix error "Tag article invalid in Entity" in ajax call.
  * Version: 1.1.5 (18.05.2014) Поправил ошибки, добавил вывод некоторых сообщений в лог, добавил параметры:
@@ -51,10 +56,13 @@
  *    prettyPhoto
  */
 
+// $o = &$modx->resource->_output; // get a reference to the output
+// return $o=777;
 
 // if ($modx->user->get('id')!=1) {return;}
 $e = &$modx->event;
 // проверяем нужное событие
+$output_content = $modx->getOption('output_content', $scriptProperties,true);	// для того чтобы выбрать откуда берем содержимое
 $direct = $modx->getOption('direct', $scriptProperties,false);	// для прямого вызова, не только по событию
 if ($e->name != 'OnWebPagePrerender' && !$direct) {return;}
 
@@ -128,7 +136,7 @@ $insert_expander_js = $modx->getOption('insert_expander_js',$scriptProperties,tr
 $insert_expander_css = $modx->getOption('insert_expander_css',$scriptProperties,true);
 // rewrite thubmnail image if it exist, you can off it to add speed this plugin
 $rewrite_image_on_exist = $modx->getOption('rewrite_image_on_exist',$scriptProperties,false);
-
+// $rewrite_image_on_exist=true;
 /*===================--THUMBNAIL PARAMETERS--====================*/
 // $lightbox = $modx->getOption('enable',$scriptProperties,true);
 $expander = $modx->getOption('expander',$scriptProperties,'highslide');
@@ -174,7 +182,7 @@ $pp_theme = $modx->getOption('theme',$scriptProperties,'pp_default');
 /*===================--EXCLUDE--====================*/
 $templates = $modx->getOption('templates', $scriptProperties, '');
 $exclude_templates = $modx->getOption('exclude_templates', $scriptProperties, '');
-$exclude_dirs = $modx->getOption('exclude_dirs', $scriptProperties, null);	// папки исключения
+$exclude_dirs = $modx->getOption('exclude_dirs', $scriptProperties, null);	// папки исключения, пример: assets/images/banners/,assets/images/aliens/{ExChild}
 if ($exclude_dirs) $exclude_dirs=explode(",",$exclude_dirs);
 
 $exclude_dirs_suffix = $modx->getOption('exclude_dirs_suffix', $scriptProperties, "{ExChild}");	// суффикс папки исключения, при наличии, которого дочерние папки исключаются
@@ -214,13 +222,35 @@ if ($direct){
     	$log->write("Не указан параметр content у ресурса");
     	return;
 	}
-	$cur_output = $curResource["content"];
-	$o = $cur_output;
+	$o = $curResource["content"];
+	$old_output = $o;
 	$cur_param_res_template = $curResource["template"];
 }else{
 	$o = &$modx->resource->_output; // get a reference to the output
-	$cur_output = $modx->resource->get('content');
+	// $old_output = $modx->resource->get('content');	// нужно прогонять контент через парсер чтобы получить правильный результат
+
+	$old_output = ($output_content)?$modx->resource->getContent():$o;
+
+// нужно заменить _output на $modx->resource->getContent(),
+// добавить параметр на входе плагина определяющий что именно он парсит всю страницу
+// или только контент. Это надо для того чтобы jevix из тикета не портил всю картинку
+// иначе плагины которые занимаются подменой кода после него срабатывать не будут
+// как вариант делать так чтобы плагин срабатывал до вызова плагина тикета, нужно посмотреть
+// из какого события тот вызывается.
+
+// getContent()
+
+// $modx->getParser();
+//  $maxIterations= intval($modx->getOption('parser_max_iterations'));
+//  $modx->parser->processElementTags('', $cur_output, true, false, '[[', ']]', array(), $maxIterations);
+//  $modx->parser->processElementTags('', $cur_output, true, true, '[[', ']]', array(), $maxIterations);
+
 	$cur_param_res_template = $modx->resource->get('template');
+
+	// $cur_output=$modx->resource->getContent();
+	// $log->write("ZZZ{$cur_output}XXX");
+	// $o=false;
+	// return;
 }
 
 if (!empty($templates) and $cur_param_res_template and !in_array($cur_param_res_template, explode(',', str_replace(" ","",$templates)))){
@@ -237,28 +267,6 @@ if (!empty($exclude_templates) and $cur_param_res_template and in_array($cur_par
 	return;
 }
 
-$output_dom=new DOMDocument();
-
-// рабочий вариант, но при нем функция asXml() возвращает данные в ASCII
-// которые никак не хотят конвертироваться в родную кодировку
-// $output_dom->loadHTML('xml encoding="UTF-8">' . $cur_output);
-
-$charset=$modx->getOption('modx_charset');
-if (!$charset) $charset="UTF-8";
-$cur_output="<html>
- <head>
-    <meta http-equiv='content-type' content='text/html; charset={$charset}'>
-  </head>
-<body>{$cur_output}</body>
-</html>";
-libxml_use_internal_errors(true);
-$output_dom->loadHTML($cur_output);
-libxml_use_internal_errors(false);
-
-
-$xml=simplexml_import_dom($output_dom); // just to make xpath more simple
-$images=$xml->xpath('//img');
-// print_r($images);
 
 if (!function_exists('css_parse')) {
 	function css_parse($styles){
@@ -312,25 +320,58 @@ if (!function_exists('generatePhpThumb')) {
 }
 
 
-$count_imgs=0;
+
+
+/////////////////////////////
+///// find image tags
+$images = array();
+// preg_match_all('/<img[^>]*>/i',$cur_output, $images,PREG_SET_ORDER);
+// preg_match_all('/<img([^>]+)\>/i',$o, $images,PREG_SET_ORDER);
+// $new_output = $old_output;
+$new_output = preg_replace('/<img\s+(([a-z]+=".*?")+\s*)>/' , "<img $1 />", $old_output);
+// $cur_output = preg_replace('/<img\s+(([a-z]+=".*?")+\s*)>/' , "<img $1 />", $cur_output);
+
+// $xxx=str_replace($cur_output, 777, $o);
+// $log->write($xxx);
+// return;
+
+
+preg_match_all('/<img[^>].*?>/', $new_output, $images,PREG_SET_ORDER);
 
 if (!empty($images)) {
 	// приводим к общему виду все img
-	$o = preg_replace('/<img\s+(([a-z]+=".*?")+\s*)>/' , "<img $1 />", $o);
+	// $o=123;
 }else{
 	$log->write("Изображений не найдено!");
 }
-if (strpos("<!DOCTYPE html>", $o)) $html5=true; // в связи с различной обработкой тегов в html4 и 5 версии
-// хотя можно поиграться и с normalizeDocument()
+$log->write(print_r($images,true));
+// return;
 
-foreach ($images as $imgs) {
-	$imgstring = $imgs->asXML(); // так как при этом возврате у нас происходит замена " />" на "/>" то нам нужно вернуть этот пробел иначе мы не получим замену в итоге
-	if ($html5==true) {
-		$imgstring=str_replace(array(' />','/>'), '>', $imgstring);
-	}
-	else {
-		$imgstring=str_replace('/>', ' />', $imgstring);
-	}
+$count_imgs=0;
+foreach($images as $key => $img_tag) {
+
+	$xml=@simplexml_load_string($img_tag[0]); // just to make xpath more simple
+	$cur_img_arr=((array)$xml[0]);
+	$cur_img=$cur_img_arr['@attributes']; // получим атрибуты img
+
+	$imgs=array(
+		"tag"    => $img_tag[0],
+		"id"     => $cur_img['id'],
+		"class"  => $cur_img['class'],
+		"alt"    => $cur_img['alt'],
+		"src"    => $cur_img['src'],
+		"title"  => $cur_img['title'],
+		"width"  => (int)$cur_img['width'],
+		"height" => (int)$cur_img['height'],
+		"style"  => $cur_img['style'],
+	);
+
+	if (!$imgs["src"] || strpos($imgs["src"], "http:")!==false) continue;
+
+	$imgstring = $imgs["tag"];
+
+	$log->write("IMGS:".print_r($imgs,true));
+	$log->write("IMGstring:".$imgstring);
 
 	$path_img  = $imgs['src'];
 	$id        = $imgs['id'];
@@ -428,8 +469,8 @@ foreach ($images as $imgs) {
 		if (empty($verif_balise)) continue; // если нет ширины или высоты игнорируем
 											// ведь эти параметры зачастую появляются при изменении высоты и ширины
 
-		$height=(int)$imgs['height'];
-		$width=(int)$imgs['width'];
+		$height=$imgs['height'];
+		$width=$imgs['width'];
 		// $log->write("before: $height - $width");
 		// get size from style if it exist
 		if ($style=css_parse($imgs['style'])) {
@@ -530,11 +571,17 @@ return $thumbnail->render();*/
 		//-------------------
 		// в этой строке происходит замена начинки src на новую ужатую картинку
 		// $new_link = $path_g[0].$pathRedim.$path_d[0];
+		$path_img=$imgs['src'];
+		// $imgName=$imgName);
 		$log->write("Replace string in output:
 			search:  {$path_img}
 			replace: {$imgName}
 			subject: {$imgstring}
 		");
+
+		// если в параметре src содержаться спец символы то они уже преобразованы в html сущности
+		// значит строку замены нам тоже надо преобразовать
+		// urlencode
 
 		$new_link = str_replace($path_img,$imgName,$imgstring);
 
@@ -588,9 +635,21 @@ return $thumbnail->render();*/
 			NewLink:     {$new_link}
 		");
 
-		$o = str_replace($imgstring,$new_link,$o);
+		// $o = str_replace($imgstring,$new_link,$o);
+		$new_output = str_replace($imgstring,$new_link,$new_output);
+
 	} // end path_base test
 } // end for loop
+
+// if ( $new_output && ($output_content) ) {
+if ( $new_output ) {
+		$log->write("
+			OLD output: {$old_output}
+			NEW output: {$new_output}
+			OOO output: {$o}
+		");
+	$o = str_replace($old_output,$new_output,$o);
+}
 
 // only add style sheet and javascript if there is an image to resize
 if ( $insert_expander and $foundImage ) {
@@ -725,9 +784,10 @@ if ( $insert_expander and $foundImage ) {
 	// add the javascript to the bottom of the page
 	if ($direct){
 		$o.= $js;
+		return $o;
 	}else{
 		$o = preg_replace('~(</body>)~i', $js . '\1', $o);
 	}
 
 }
-return $o;
+return;
