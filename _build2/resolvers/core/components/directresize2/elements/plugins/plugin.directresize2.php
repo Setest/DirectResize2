@@ -4,6 +4,7 @@
  *
  * Author: Stepan Prishepenko (Setest) <itman116@gmail.com>
  *
+ * Version: 1.1.9 (12.06.2014) Исправил касяк с параметром rewrite_image_on_exist
  * Version: 1.1.8 (07.06.2014) Добавил параметр output_content, def:"true", т.е. данные по умолчанию парсит только из раздела content, при false обрабатывает все страницу.
  * 														 Изменил получение поля content c get("content") на getContent(); Т.к. последний может быть перегружен, как например делает Jevix из компонента Ticket.
  *                						 Также заменил способ получения картинок XML на regexp. Т.к. после того, как нужно заменить оригинал строки на итоговый, он строил оригинал через
@@ -513,7 +514,7 @@ foreach($images as $key => $img_tag) {
 		$imgName = "{$thumb_dir}{$img_name}{$thumb_key}_w{$width}_h{$height}.{$ext}";
 		$imgOrigName = "{$thumb_dir}{$img_name}{$original_key}_w{$config_image['w']}_h{$config_image['h']}.{$ext}";
 
-		if ($rewrite_image_on_exist or !file_exists($imgName)) {
+		if (!file_exists($imgName) || $rewrite_image_on_exist ) {
 			// old method
 			// $imgName = directResize($path_img,$path,$thumb_key,$width,$height,$r,$q_jpg,$q_png);
 
